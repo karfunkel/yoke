@@ -17,6 +17,10 @@ package com.jetdrone.vertx.yoke.middleware;
 
 import groovy.lang.Closure;
 import groovy.json.JsonSlurper;
+import groovy.lang.GroovyObject;
+import groovy.lang.MetaClass;
+import groovy.lang.MissingPropertyException;
+import org.codehaus.groovy.runtime.InvokerHelper;
 import org.vertx.groovy.core.http.HttpServerFileUpload;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.MultiMap;
@@ -34,12 +38,16 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
-public class GYokeRequest extends YokeRequest /*implements org.vertx.groovy.core.http.HttpServerRequest*/ {
+public class GYokeRequest extends YokeRequest implements GroovyObject /*,org.vertx.groovy.core.http.HttpServerRequest*/ {
+
+    // never persist the MetaClass
+    private transient MetaClass metaClass;
 
     private Map<String, GYokeFileUpload> files;
 
     public GYokeRequest(HttpServerRequest request, YokeResponse response, boolean secure, Map<String, Object> context) {
         super(request, response, secure, context);
+        this.metaClass = InvokerHelper.getMetaClass(this.getClass());
     }
 
     private HttpServerFileUpload wrap(final org.vertx.java.core.http.HttpServerFileUpload jHttpServerFileUpload) {
@@ -302,5 +310,41 @@ public class GYokeRequest extends YokeRequest /*implements org.vertx.groovy.core
 
     public String getIp() {
         return ip();
+    }
+
+    @Override
+    public Object invokeMethod(String name, Object args) {
+        return getMetaClass().invokeMethod(this, name, args);
+    }
+
+    @Override
+    public Object getProperty(String property) {
+        try {
+            return getMetaClass().getProperty(this, property);
+        } catch (MissingPropertyException e) {
+            return get(property);
+        }
+    }
+
+    @Override
+    public void setProperty(String property, Object newValue) {
+        try {
+            getMetaClass().setProperty(this, property, newValue);
+        } catch (MissingPropertyException e) {
+            put(property, newValue);
+        }
+    }
+
+    @Override
+    public MetaClass getMetaClass() {
+        if (metaClass == null) {
+            metaClass = InvokerHelper.getMetaClass(getClass());
+        }
+        return metaClass;
+    }
+
+    @Override
+    public void setMetaClass(MetaClass metaClass) {
+        this.metaClass = metaClass;
     }
 }

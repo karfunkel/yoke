@@ -15,6 +15,7 @@
  */
 package com.jetdrone.vertx.yoke;
 
+import com.jetdrone.vertx.yoke.middleware.GRouter;
 import com.jetdrone.vertx.yoke.middleware.GYokeRequest;
 import com.jetdrone.vertx.yoke.middleware.GYokeResponse;
 import com.jetdrone.vertx.yoke.middleware.YokeRequest;
@@ -185,5 +186,51 @@ public class GYoke {
         org.vertx.java.core.http.HttpServer server = gserver.toJavaServer();
         jYoke.listen(server);
         return this;
+    }
+
+    /**
+     * Convenience method to use a GRouter instance configured by the given closure
+     * @param closure
+     * @return Yoke
+     */
+    public GYoke useRouter(Closure closure) {
+        use(createRouter(closure));
+        return this;
+    }
+
+    /**
+     * Convenience method to create a GRouter instance configured by the given closure
+     * @param closure
+     * @return The create GRouter
+     */
+    public GRouter createRouter(Closure closure) {
+        GRouter router = new GRouter();
+        closure.setDelegate(router);
+        closure.setResolveStrategy(Closure.DELEGATE_FIRST);
+        closure.call();
+        return router;
+    }
+
+    /**
+     * Convenience method to create a GYoke instance configured by the given closure to allow a
+     * simpler, more Groovy-styled code together with useRouter:
+     * <pre>
+     * GYoke.create (vertx) {
+     *      useRouter {
+     *          get("/hello") { request ->
+     *              request.response.end "Hello World!"
+     *          }
+     *      }
+     * }
+     * </pre>
+     * @param closure
+     * @return Yoke
+     */
+    public static GYoke create(Vertx vertx, Closure closure) {
+        GYoke yoke = new GYoke(vertx);
+        closure.setDelegate(yoke);
+        closure.setResolveStrategy(Closure.DELEGATE_FIRST);
+        closure.call();
+        return yoke;
     }
 }
