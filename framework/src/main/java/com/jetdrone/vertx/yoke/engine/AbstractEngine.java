@@ -26,6 +26,9 @@ import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.file.FileProps;
 import org.vertx.java.core.file.FileSystem;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.Date;
 
 /**
@@ -54,11 +57,15 @@ public abstract class AbstractEngine<T> implements Engine {
         return "UTF-8";
     }
 
+    public ClassLoader getClassLoader() {
+        return Thread.currentThread().getContextClassLoader();
+    }
+
     /**
      * Verifies if a file in the filesystem is still fresh against the cache. Errors are treated as not fresh.
      *
      * @param filename File to look for
-     * @param next next asynchronous handler
+     * @param next     next asynchronous handler
      */
     public void isFresh(final String filename, final Handler<Boolean> next) {
         final FileSystem fileSystem = vertx.fileSystem();
@@ -90,28 +97,52 @@ public abstract class AbstractEngine<T> implements Engine {
 
     private void loadToCache(final String filename, final Handler<Throwable> next) {
         final FileSystem fileSystem = vertx.fileSystem();
-
-        fileSystem.props(filename, new AsyncResultHandler<FileProps>() {
+        fileSystem.exists(filename, new AsyncResultHandler<Boolean>() {
             @Override
-            public void handle(AsyncResult<FileProps> asyncResult) {
+            public void handle(AsyncResult<Boolean> asyncResult) {
                 if (asyncResult.failed()) {
                     next.handle(asyncResult.cause());
-                } else {
-                    final Date lastModified = asyncResult.result().lastModifiedTime();
-                    // load from the file system
-                    fileSystem.readFile(filename, new AsyncResultHandler<Buffer>() {
+                } else if (asyncResult.result()) {
+                    fileSystem.props(filename, new AsyncResultHandler<FileProps>() {
                         @Override
-                        public void handle(AsyncResult<Buffer> asyncResult) {
+                        public void handle(AsyncResult<FileProps> asyncResult) {
                             if (asyncResult.failed()) {
                                 next.handle(asyncResult.cause());
                             } else {
-                                // cache the result
-                                String result = asyncResult.result().toString();
-                                cache.put(filename, new LRUCache.CacheEntry<String, T>(lastModified, result));
-                                next.handle(null);
+                                final Date lastModified = asyncResult.result().lastModifiedTime();
+                                // load from the file system
+                                fileSystem.readFile(filename, new AsyncResultHandler<Buffer>() {
+                                    @Override
+                                    public void handle(AsyncResult<Buffer> asyncResult) {
+                                        if (asyncResult.failed()) {
+                                            next.handle(asyncResult.cause());
+                                        } else {
+                                            // cache the result
+                                            String result = asyncResult.result().toString();
+                                            cache.put(filename, new LRUCache.CacheEntry<String, T>(lastModified, result));
+                                            next.handle(null);
+                                        }
+                                    }
+                                });
                             }
                         }
                     });
+                } else {
+                    // Has to be done synchronous at the moment. Currently no asynchronous access to classpath resources exists
+                    try {
+                        Date now = new Date();
+                        Reader reader = new InputStreamReader(getClassLoader().getResourceAsStream(filename), contentEncoding());
+                        StringBuilder builder = new StringBuilder();
+                        char[] buffer = new char[1024];
+                        int len;
+                        while ((len = reader.read(buffer)) > 0) {
+                            builder.append(buffer, 0, len);
+                        }
+                        cache.put(filename, new LRUCache.CacheEntry<String, T>(now, builder.toString()));
+                        next.handle(null);
+                    } catch (IOException e) {
+                        next.handle(e);
+                    }
                 }
             }
         });
