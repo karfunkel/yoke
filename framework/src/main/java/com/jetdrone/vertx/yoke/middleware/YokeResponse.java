@@ -321,8 +321,10 @@ public class YokeResponse implements HttpServerResponse {
         }
     }
 
-    public Map<String, Object> getContext() {
-        return context;
+    public Map<String, Engine> getEngines() {
+        Map<String, Engine> map = new HashMap<String, Engine>();
+        map.putAll(engines);
+        return map;
     }
 
     // interface implementation

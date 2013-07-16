@@ -132,6 +132,15 @@ public class YokeRequest implements HttpServerRequest {
     }
 
     /**
+     * Returns a {@link Set} view of the keys contained in the context.
+     *
+     * @return
+     */
+    public Set<String> getContextKeys() {
+        return context.keySet();
+    }
+
+    /**
      * Allow getting headers in a generified way.
      *
      * @param name The key to get
@@ -477,43 +486,6 @@ public class YokeRequest implements HttpServerRequest {
         }
 
         return request.remoteAddress().getHostName();
-    }
-
-    /**
-     * Allow getting parameters in a generified way.
-     *
-     * @param name The key to get
-     * @return The found object
-     */
-    public String getParameter(String name) {
-        return params().get(name);
-    }
-
-    /**
-     * Allow getting parameters in a generified way and return defaultValue if the key does not exist.
-     *
-     * @param name The key to get
-     * @param defaultValue value returned when the key does not exist
-     * @return The found object
-     */
-    public String getParameter(String name, String defaultValue) {
-        String value = getParameter(name);
-
-        if (value == null) {
-            return defaultValue;
-        }
-
-        return value;
-    }
-
-    /**
-     * Allow getting parameters in a generified way.
-     *
-     * @param name The key to get
-     * @return The found object
-     */
-    public List<String> getParameterList(String name) {
-        return params().getAll(name);
     }
 
     /**
