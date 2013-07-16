@@ -31,6 +31,8 @@ import org.vertx.java.core.json.JsonElement;
 import org.vertx.java.core.json.JsonObject;
 import org.vertx.java.core.streams.ReadStream;
 
+import java.lang.Object;
+import java.lang.String;
 import java.util.*;
 
 public class YokeResponse implements HttpServerResponse {
@@ -282,6 +284,10 @@ public class YokeResponse implements HttpServerResponse {
                 handler.handle(null);
             }
         }
+    }
+
+    public Map<String, Object> getContext() {
+        return context;
     }
 
     // interface implementation
