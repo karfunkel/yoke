@@ -25,6 +25,7 @@ import org.vertx.java.core.http.HttpServerRequest;
 
 import org.vertx.groovy.core.Vertx;
 import org.vertx.groovy.core.http.HttpServer;
+import org.vertx.java.core.logging.Logger;
 
 import java.util.Map;
 
@@ -53,9 +54,10 @@ public class GYoke {
      *
      * @param vertx The Vertx instance
      */
-    public GYoke(Vertx vertx) {
+    public GYoke(Vertx vertx, Logger logger) {
         this.vertx = vertx.toJavaVertx();
-        jYoke = new Yoke(this.vertx, new RequestWrapper() {
+
+        jYoke = new Yoke(this.vertx, logger, new RequestWrapper() {
             @Override
             public YokeRequest wrap(HttpServerRequest request, boolean secure, Map<String, Object> context, Map<String, Engine> engines) {
                 GYokeResponse response = new GYokeResponse(request.response(), context, engines);
