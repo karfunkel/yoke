@@ -226,8 +226,8 @@ public class GYoke {
      * @param closure
      * @return Yoke
      */
-    public static GYoke create(Vertx vertx, Closure closure) {
-        GYoke yoke = new GYoke(vertx);
+    public static GYoke create(Vertx vertx, Logger logger, Closure closure) {
+        GYoke yoke = new GYoke(vertx, logger);
         closure.setDelegate(yoke);
         closure.setResolveStrategy(Closure.DELEGATE_FIRST);
         closure.call();
