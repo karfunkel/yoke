@@ -501,6 +501,7 @@ public class YokeResponse implements HttpServerResponse {
         filter = null;
         triggerHeadersHandlers();
         response.sendFile(filename);
+        triggerEndHandlers();
         return this;
     }
 
@@ -511,6 +512,7 @@ public class YokeResponse implements HttpServerResponse {
         filter = null;
         triggerHeadersHandlers();
         response.sendFile(filename, notFoundFile);
+        triggerEndHandlers();
         return this;
     }
 
